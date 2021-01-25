@@ -63,6 +63,8 @@ impl fmt::Display for TicTacToe {
 
             if (i + 1) % 3 == 0 {
                 write!(f, "\n")?;
+            } else {
+                write!(f, " ")?;
             }
         }
 
