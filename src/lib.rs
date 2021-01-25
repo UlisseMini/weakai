@@ -58,12 +58,8 @@ pub trait BoardGame {
     /// Return all legal moves for the current board state.
     fn legal(&self) -> Vec<Self::Move>;
 
-    /// Make a legal move on the board
-    fn make_move_mut(&mut self, mv: Self::Move);
-
-    /// Undo the last move, an undo when there is no history
-    /// should panic.
-    fn undo_move_mut(&mut self);
+    /// Make a legal move, and return a new board
+    fn make_move(&self, mv: Self::Move) -> Self;
 
     /// Return an evaluation of the result if the game is over.
     fn result(&self) -> Option<i16>;
@@ -79,7 +75,7 @@ pub trait BoardGame {
 // TODO: use generics to implement helpers around BoardGame (eg, make_move)
 
 /// The minimax algorithm, doing a full search and using `BoardGame.result` for score.
-pub fn minimax<T>(board: &mut T) -> i16
+pub fn minimax<T>(board: &T) -> i16
 where
     T: BoardGame,
 {
@@ -93,11 +89,8 @@ where
     let legal_moves = board.legal();
     assert!(legal_moves.len() > 0, "result is None, but legal is []");
     for mv in legal_moves {
-        board.make_move_mut(mv);
-        let mv_score = minimax(board);
+        let mv_score = minimax(&board.make_move(mv));
         score = player.best(score, mv_score);
-
-        board.undo_move_mut();
     }
 
     return score;
@@ -112,11 +105,11 @@ mod tests {
         use tictactoe::*;
         use TicTacToeSquare::*;
 
-        let mut tic = TicTacToe::start();
-        assert_eq!(minimax(&mut tic), 0); // tictactoe always results in a draw
+        let tic = TicTacToe::start();
+        assert_eq!(minimax(&tic), 0); // tictactoe always results in a draw
 
-        tic.make_move_mut(B2);
-        tic.make_move_mut(B3);
-        assert!(minimax(&mut tic) > 0); // forced win for white
+        let tic = tic.make_move(B2);
+        let tic = tic.make_move(B3);
+        assert!(minimax(&tic) > 0); // forced win for white
     }
 }

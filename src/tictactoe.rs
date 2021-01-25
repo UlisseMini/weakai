@@ -45,10 +45,10 @@ impl TicTacToeResult {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TicTacToe {
-    turn: Player,              // The player to move, X=MAX, O=MIN
-    moves: Vec<TicTacToeMove>, // Moves made so far, used in undo()
-    board: [Option<Player>; 9],
+    turn: Player,               // The player to move, X=MAX, O=MIN
+    board: [Option<Player>; 9], // The board, from the top left down
 }
 
 impl fmt::Display for TicTacToe {
@@ -80,7 +80,6 @@ impl BoardGame for TicTacToe {
     fn start() -> Self {
         Self {
             turn: Player::Max,
-            moves: Vec::new(),
             board: [None; 9],
         }
     }
@@ -89,16 +88,11 @@ impl BoardGame for TicTacToe {
         self.turn
     }
 
-    fn make_move_mut(&mut self, mv: Self::Move) {
-        self.board[mv as usize] = Some(self.turn);
-        self.turn = self.turn.other();
-        self.moves.push(mv);
-    }
-
-    fn undo_move_mut(&mut self) {
-        let mv = self.moves.pop().unwrap();
-        self.board[mv as usize] = None;
-        self.turn = self.turn.other();
+    fn make_move(&self, mv: Self::Move) -> Self {
+        let mut clone = self.clone();
+        clone.board[mv as usize] = Some(self.turn);
+        clone.turn = self.turn.other();
+        clone
     }
 
     fn legal(&self) -> Vec<Self::Move> {
@@ -176,15 +170,12 @@ mod tests {
 
     #[test]
     fn legal_moves() {
-        let mut tic = TicTacToe::start();
+        let tic = TicTacToe::start();
         assert_eq!(tic.legal(), vec![A3, B3, C3, A2, B2, C2, A1, B1, C1]);
 
-        tic.make_move_mut(A3);
+        let tic = tic.make_move(A3);
         eprintln!("after A3\n{}", tic);
         assert_eq!(tic.legal(), vec![B3, C3, A2, B2, C2, A1, B1, C1]);
-
-        tic.undo_move_mut();
-        assert_eq!(tic.legal(), vec![A3, B3, C3, A2, B2, C2, A1, B1, C1]);
     }
 
     #[test]
