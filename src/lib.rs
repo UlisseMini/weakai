@@ -117,6 +117,6 @@ mod tests {
 
         tic.make_move_mut(B2);
         tic.make_move_mut(B3);
-        assert_eq!(minimax(&mut tic), 1); // forced win for white
+        assert!(minimax(&mut tic) > 0); // forced win for white
     }
 }
