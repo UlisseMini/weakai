@@ -90,9 +90,9 @@ impl BoardGame for TicTacToe {
         self.turn
     }
 
-    fn make_move(&self, mv: Self::Move) -> Self {
+    fn make_move(&self, mv: &Self::Move) -> Self {
         let mut clone = self.clone();
-        clone.board[mv as usize] = Some(self.turn);
+        clone.board[*mv as usize] = Some(self.turn);
         clone.turn = self.turn.other();
         clone
     }
@@ -175,7 +175,7 @@ mod tests {
         let tic = TicTacToe::start();
         assert_eq!(tic.legal(), vec![A3, B3, C3, A2, B2, C2, A1, B1, C1]);
 
-        let tic = tic.make_move(A3);
+        let tic = tic.make_move(&A3);
         eprintln!("after A3\n{}", tic);
         assert_eq!(tic.legal(), vec![B3, C3, A2, B2, C2, A1, B1, C1]);
     }
