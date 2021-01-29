@@ -1,6 +1,8 @@
 pub mod tictactoe;
 use std::fmt;
 
+const EVAL_INF: i16 = i16::MAX;
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Player {
     Max,
@@ -31,6 +33,14 @@ impl Player {
         match self {
             Self::Max => i16::max(x, y),
             Self::Min => i16::min(x, y),
+        }
+    }
+
+    /// Return 1 for Max -1 for Min
+    pub fn factor(&self) -> i16 {
+        match self {
+            Self::Max => 1,
+            Self::Min => -1,
         }
     }
 
@@ -96,6 +106,39 @@ where
     return score;
 }
 
+/// The minimax algorithm with alphabeta pruning, also doing a full search
+/// alpha is the lower bound
+/// beta is the upper bound
+pub fn alphabeta<T: BoardGame>(board: &T, mut alpha: i16, beta: i16) -> i16 {
+    // The lower bound must be lower then the upper bound,
+    // If they were equal we would be forced to return alpha/beta
+    // Immediately. So it doesn't make sense to me for alpha=beta,
+    // However I might be wrong, and maybe it should be allowed.
+    assert!(alpha < beta);
+
+    if let Some(game_over_score) = board.result() {
+        // return the result, relative to the side to move since
+        // we're in a negamax framework.
+        return game_over_score * board.turn().factor();
+    }
+
+    let legal_moves = board.legal();
+    assert!(legal_moves.len() > 0, "result is None, but legal is []");
+
+    for mv in legal_moves {
+        let val = -alphabeta(&board.make_move(mv), -beta, -alpha);
+
+        // If the value of this node is greater then the upper bound,
+        // our opponent will never go down this path.
+        if val >= beta {
+            return beta;
+        }
+        alpha = i16::max(alpha, val);
+    }
+
+    return alpha;
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -111,5 +154,18 @@ mod tests {
         let tic = tic.make_move(B2);
         let tic = tic.make_move(B3);
         assert!(minimax(&tic) > 0); // forced win for white
+    }
+
+    #[test]
+    fn alphabeta_tictactoe() {
+        use tictactoe::*;
+        use TicTacToeSquare::*;
+
+        let tic = TicTacToe::start();
+        assert_eq!(alphabeta(&tic, -EVAL_INF, EVAL_INF), 0); // tictactoe always results in a draw
+
+        let tic = tic.make_move(B2);
+        let tic = tic.make_move(B3);
+        assert!(alphabeta(&tic, -EVAL_INF, EVAL_INF) > 0); // forced win for white
     }
 }
