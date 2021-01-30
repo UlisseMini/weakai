@@ -1,8 +1,6 @@
 pub mod tictactoe;
 use std::fmt;
 
-const EVAL_INF: i16 = i16::MAX;
-
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Player {
     Max,
@@ -162,10 +160,10 @@ mod tests {
         use TicTacToeSquare::*;
 
         let tic = TicTacToe::start();
-        assert_eq!(alphabeta(&tic, -EVAL_INF, EVAL_INF), 0); // tictactoe always results in a draw
+        assert_eq!(alphabeta(&tic, -i16::MAX, i16::MAX), 0); // tictactoe always results in a draw
 
         let tic = tic.make_move(B2);
         let tic = tic.make_move(B3);
-        assert!(alphabeta(&tic, -EVAL_INF, EVAL_INF) > 0); // forced win for white
+        assert!(alphabeta(&tic, -i16::MAX, i16::MAX) > 0); // forced win for white
     }
 }
