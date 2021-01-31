@@ -139,6 +139,24 @@ pub fn alphabeta<T: BoardGame>(board: &T, mut alpha: i16, beta: i16) -> i16 {
     return alpha;
 }
 
+/// The minimax algorithm with alphabeta pruning, returning the best move
+/// for a position, along with an evaluation.
+pub fn alphabeta_mv<T: BoardGame>(pos: &T) -> (T::Move, i16) {
+    let mut best_score = -i16::MAX;
+    let mut best_move = 0;
+    let mut legal = pos.legal();
+
+    // TODO: Add A/B pruning toplevel (right now just calling alphabeta on all subs)
+    for (i, mv) in legal.iter().enumerate() {
+        let score = -alphabeta(&pos.make_move(&mv), -i16::MAX, i16::MAX);
+        if score > best_score {
+            best_score = score;
+            best_move = i;
+        }
+    }
+    return (legal.remove(best_move), best_score);
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -164,8 +182,14 @@ mod tests {
         let tic = TicTacToe::start();
         assert_eq!(alphabeta(&tic, -i16::MAX, i16::MAX), 0); // tictactoe always results in a draw
 
+        // test a forced win for white
         let tic = tic.make_move(&B2);
         let tic = tic.make_move(&B3);
-        assert!(alphabeta(&tic, -i16::MAX, i16::MAX) > 0); // forced win for white
+        let ab_score = alphabeta(&tic, -i16::MAX, i16::MAX);
+        assert!(ab_score > 0);
+
+        let (mv, ab_mv_score) = alphabeta_mv(&tic);
+        assert_eq!(ab_score, ab_mv_score);
+        // assert_eq!(mv, ); // this position has multiple winning moves.
     }
 }
