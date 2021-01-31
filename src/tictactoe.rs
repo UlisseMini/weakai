@@ -45,7 +45,7 @@ impl TicTacToeResult {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TicTacToe {
     turn: Player,               // The player to move, X=MAX, O=MIN
     board: [Option<Player>; 9], // The board, from the top left down

@@ -2,8 +2,9 @@ pub mod mcts;
 pub mod tictactoe;
 use std::fmt;
 use std::fmt::{Debug, Display};
+use std::hash::Hash;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Player {
     Max,
     Min,
@@ -54,7 +55,7 @@ impl Player {
 }
 
 /// An abstract, 2 player board game
-pub trait BoardGame: Display + Debug + Clone {
+pub trait BoardGame: Display + Debug + Clone + PartialEq + Eq + Hash {
     type Move;
 
     /// Return the player who's turn it is,
@@ -188,7 +189,7 @@ mod tests {
         let ab_score = alphabeta(&tic, -i16::MAX, i16::MAX);
         assert!(ab_score > 0);
 
-        let (mv, ab_mv_score) = alphabeta_mv(&tic);
+        let (_mv, ab_mv_score) = alphabeta_mv(&tic);
         assert_eq!(ab_score, ab_mv_score);
         // assert_eq!(mv, ); // this position has multiple winning moves.
     }

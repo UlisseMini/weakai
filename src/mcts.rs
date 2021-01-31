@@ -1,8 +1,9 @@
 use crate::BoardGame;
 use rand::prelude::*;
 use rand::rngs::StdRng;
+use std::collections::HashMap;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Node<T> {
     pos: T,
     visits: u64,
@@ -26,22 +27,44 @@ impl<T> Node<T> {
 pub struct GameTree<T: BoardGame> {
     root: usize,
     arena: Vec<Node<T>>,
+    positions: HashMap<T, usize>,
     rng: StdRng,
 }
 
 impl<T: BoardGame> GameTree<T> {
     pub fn new(root: T) -> Self {
-        Self {
+        let root_node = Node::new(root, 0);
+        let mut tree = Self {
             root: 0,
-            arena: vec![Node::new(root, 0)],
+            arena: vec![root_node.clone()],
             rng: StdRng::seed_from_u64(42),
-        }
+            positions: HashMap::new(),
+        };
+
+        tree.push_node(root_node);
+        tree
     }
 
     /// Choose the best move for a board
-    pub fn choose(&self, pos: &T) -> (T::Move, i16) {
-        let mut legal = pos.legal();
-        (legal.remove(0), 0)
+    pub fn choose(&self, pos: &T) -> (T::Move, f32) {
+        let legal = pos.legal();
+
+        legal
+            .into_iter()
+            .map(|mv| {
+                let new_pos = pos.make_move(&mv);
+                let node_idx = self.positions.get(&new_pos).unwrap();
+                let node = &self.arena[*node_idx];
+                let score = if node.visits != 0 {
+                    node.score as f32 / node.visits as f32
+                } else {
+                    -f32::INFINITY
+                };
+
+                (mv, score * pos.turn().factor() as f32)
+            })
+            .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
+            .unwrap()
     }
 
     /// Run a single iteration of mcts, and expand the game tree.
@@ -153,8 +176,12 @@ impl<T: BoardGame> GameTree<T> {
 
     fn push_node(&mut self, node: Node<T>) -> usize {
         let node_idx = self.arena.len();
+
+        self.positions.insert(node.pos.clone(), node_idx);
+
         self.arena[node.parent].children.push(node_idx);
         self.arena.push(node);
+
         node_idx
     }
 }
@@ -182,18 +209,21 @@ mod tests {
 
         let mut tic = TicTacToe::start();
 
-        // "train" the mcts tree/agent
-        let mut mcts_tree = GameTree::new(tic.clone());
-        for _ in 0..1000 {
-            mcts_tree.step();
-        }
-
         // play a game from the starting position
         while tic.result().is_none() {
             let (mv, eval) = match tic.turn() {
-                Player::Max => alphabeta_mv(&tic),
+                Player::Max => {
+                    let (mv, eval) = alphabeta_mv(&tic);
+                    (mv, eval as f32)
+                }
                 // Player::Min => alphabeta_mv(&tic),
-                Player::Min => mcts_tree.choose(&tic),
+                Player::Min => {
+                    let mut mcts_tree = GameTree::new(tic.clone());
+                    for _ in 0..1000 {
+                        mcts_tree.step();
+                    }
+                    mcts_tree.choose(&tic)
+                }
             };
             tic = tic.make_move(&mv);
 
