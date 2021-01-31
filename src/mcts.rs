@@ -177,6 +177,7 @@ mod tests {
         // panic!("{:#?}", gt.arena[0]);
     }
 
+    /*
     #[test]
     fn mcts_winning_tictactoe() {
         use crate::tictactoe::TicTacToeSquare::*;
@@ -224,4 +225,5 @@ mod tests {
             return (best_move, best_score);
         };
     }
+    */
 }
