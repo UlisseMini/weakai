@@ -1,4 +1,4 @@
-use crate::{BoardGame, Player};
+use crate::BoardGame;
 use rand::prelude::*;
 use rand::rngs::StdRng;
 
@@ -29,7 +29,6 @@ pub struct GameTree<T: BoardGame> {
     rng: StdRng,
 }
 
-// TODO: Get rid of clone requirement (literally used in one place)
 impl<T: BoardGame> GameTree<T> {
     pub fn new(root: T) -> Self {
         Self {
@@ -40,9 +39,9 @@ impl<T: BoardGame> GameTree<T> {
     }
 
     /// Choose the best move for a board
-    pub fn choose(&self, pos: T) -> T::Move {
+    pub fn choose(&self, pos: &T) -> (T::Move, i16) {
         let mut legal = pos.legal();
-        legal.remove(0)
+        (legal.remove(0), 0)
     }
 
     /// Run a single iteration of mcts, and expand the game tree.
@@ -177,53 +176,32 @@ mod tests {
         // panic!("{:#?}", gt.arena[0]);
     }
 
-    /*
-    #[test]
-    fn mcts_winning_tictactoe() {
-        use crate::tictactoe::TicTacToeSquare::*;
-
-        let tic = TicTacToe::start();
-
-        // "train" the mcts tree/agent
-        let mut mcts_tree = GameTree::new(tic.clone());
-        for i in 0..10000 {
-            mcts_tree.step();
-        }
-
-        let tic = tic.make_move(&B2);
-        let tic = tic.make_move(&B3);
-        let mcts_eval = mcts_tree.evaluate(tic);
-        assert!(mcts_eval > 0); // forced win for white
-    }
-
     #[test]
     fn mcts_vs_alphabeta_tictactoe() {
-        use crate::alphabeta;
+        use crate::{alphabeta_mv, Player};
 
         let mut tic = TicTacToe::start();
 
         // "train" the mcts tree/agent
         let mut mcts_tree = GameTree::new(tic.clone());
-        for i in 0..10000 {
+        for _ in 0..1000 {
             mcts_tree.step();
         }
 
-        // setup a best move alphabeta function (TODO: Put in src/lib.rs)
-        let best_move_alphabeta = |pos: TicTacToe| {
-            let legal = pos.legal();
+        // play a game from the starting position
+        while tic.result().is_none() {
+            let (mv, eval) = match tic.turn() {
+                Player::Max => alphabeta_mv(&tic),
+                // Player::Min => alphabeta_mv(&tic),
+                Player::Min => mcts_tree.choose(&tic),
+            };
+            tic = tic.make_move(&mv);
 
-            let mut best_score = -i16::MAX;
-            let mut best_move = legal[0];
+            eprintln!("{}eval: {}\n", tic, eval);
+        }
 
-            for mv in pos.legal() {
-                let score = alphabeta(&pos, -i16::MAX, i16::MAX);
-                if score > best_score {
-                    best_score = score;
-                    best_move = mv;
-                }
-            }
-            return (best_move, best_score);
-        };
+        let result = tic.result().unwrap();
+        eprintln!("\nresult: {}\nscore: {}", tic, result);
+        assert_eq!(result, 0);
     }
-    */
 }
