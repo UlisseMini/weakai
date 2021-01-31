@@ -1,5 +1,7 @@
+pub mod mcts;
 pub mod tictactoe;
 use std::fmt;
+use std::fmt::{Debug, Display};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Player {
@@ -52,7 +54,7 @@ impl Player {
 }
 
 /// An abstract, 2 player board game
-pub trait BoardGame {
+pub trait BoardGame: Display + Debug + Clone {
     type Move;
 
     /// Return the player who's turn it is,
@@ -67,7 +69,7 @@ pub trait BoardGame {
     fn legal(&self) -> Vec<Self::Move>;
 
     /// Make a legal move, and return a new board
-    fn make_move(&self, mv: Self::Move) -> Self;
+    fn make_move(&self, mv: &Self::Move) -> Self;
 
     /// Return an evaluation of the result if the game is over.
     fn result(&self) -> Option<i16>;
@@ -97,7 +99,7 @@ where
     let legal_moves = board.legal();
     assert!(legal_moves.len() > 0, "result is None, but legal is []");
     for mv in legal_moves {
-        let mv_score = minimax(&board.make_move(mv));
+        let mv_score = minimax(&board.make_move(&mv));
         score = player.best(score, mv_score);
     }
 
@@ -124,7 +126,7 @@ pub fn alphabeta<T: BoardGame>(board: &T, mut alpha: i16, beta: i16) -> i16 {
     assert!(legal_moves.len() > 0, "result is None, but legal is []");
 
     for mv in legal_moves {
-        let val = -alphabeta(&board.make_move(mv), -beta, -alpha);
+        let val = -alphabeta(&board.make_move(&mv), -beta, -alpha);
 
         // If the value of this node is greater then the upper bound,
         // our opponent will never go down this path.
@@ -149,8 +151,8 @@ mod tests {
         let tic = TicTacToe::start();
         assert_eq!(minimax(&tic), 0); // tictactoe always results in a draw
 
-        let tic = tic.make_move(B2);
-        let tic = tic.make_move(B3);
+        let tic = tic.make_move(&B2);
+        let tic = tic.make_move(&B3);
         assert!(minimax(&tic) > 0); // forced win for white
     }
 
@@ -162,8 +164,8 @@ mod tests {
         let tic = TicTacToe::start();
         assert_eq!(alphabeta(&tic, -i16::MAX, i16::MAX), 0); // tictactoe always results in a draw
 
-        let tic = tic.make_move(B2);
-        let tic = tic.make_move(B3);
+        let tic = tic.make_move(&B2);
+        let tic = tic.make_move(&B3);
         assert!(alphabeta(&tic, -i16::MAX, i16::MAX) > 0); // forced win for white
     }
 }
