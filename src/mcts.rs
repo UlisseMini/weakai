@@ -203,35 +203,78 @@ mod tests {
         // panic!("{:#?}", gt.arena[0]);
     }
 
-    #[test]
-    fn mcts_vs_alphabeta_tictactoe() {
+    // TODO: Play as both sides
+    fn mcts_vs_alphabeta<T: BoardGame>(start: T, want: i16) {
         use crate::{alphabeta_mv, Player};
 
-        let mut tic = TicTacToe::start();
+        let mcts_ai = |pos: &T| {
+            let mut mcts_tree = GameTree::new(pos.clone());
+            for _ in 0..1000 {
+                mcts_tree.step();
+            }
+            mcts_tree.choose(pos)
+        };
 
-        // play a game from the starting position
-        while tic.result().is_none() {
-            let (mv, eval) = match tic.turn() {
-                Player::Max => {
-                    let (mv, eval) = alphabeta_mv(&tic);
-                    (mv, eval as f32)
+        let alphabeta_ai = |pos: &T| {
+            let (mv, eval) = alphabeta_mv(pos);
+            (mv, eval as f32)
+        };
+
+        // play a game from the starting position using max_ai and min_ai
+        let play_game =
+            |start: &T, max_ai: fn(&T) -> (T::Move, f32), min_ai: fn(&T) -> (T::Move, f32)| {
+                let mut pos = start.clone();
+
+                while pos.result().is_none() {
+                    let (mv, eval) = match pos.turn() {
+                        Player::Max => max_ai(&pos),
+                        Player::Min => min_ai(&pos),
+                    };
+                    pos = pos.make_move(&mv);
+
+                    eprintln!("{}eval: {}\n", pos, eval);
                 }
-                // Player::Min => alphabeta_mv(&tic),
-                Player::Min => {
-                    let mut mcts_tree = GameTree::new(tic.clone());
-                    for _ in 0..1000 {
-                        mcts_tree.step();
-                    }
-                    mcts_tree.choose(&tic)
-                }
+                (pos.result().unwrap(), pos)
             };
-            tic = tic.make_move(&mv);
 
-            eprintln!("{}eval: {}\n", tic, eval);
-        }
+        eprintln!("alphabeta vs mcts");
+        let (result, end_pos) = play_game(&start, alphabeta_ai, mcts_ai);
+        eprintln!("\nresult: {} score: {} want {}", end_pos, result, want);
+        assert_eq!(result, want);
 
-        let result = tic.result().unwrap();
-        eprintln!("\nresult: {}\nscore: {}", tic, result);
-        assert_eq!(result, 0);
+        eprintln!("mcts vs alphabeta");
+        let (result, end_pos) = play_game(&start, mcts_ai, alphabeta_ai);
+        eprintln!("\nresult: {} score: {} want {}", end_pos, result, want);
+        assert_eq!(result, want);
+    }
+
+    #[test]
+    fn mcts_vs_alphabeta_tictactoe_startpos() {
+        mcts_vs_alphabeta(TicTacToe::start(), 0);
+    }
+
+    #[test]
+    fn mcts_vs_alphabeta_tictactoe_whitewin() {
+        use crate::tictactoe::*;
+        use TicTacToeSquare::*;
+
+        mcts_vs_alphabeta(TicTacToe::start().make_move(&B2).make_move(&B3), 1);
+    }
+
+    #[test]
+    fn mcts_vs_alphabeta_tictactoe_blackwin() {
+        use crate::tictactoe::*;
+        use TicTacToeSquare::*;
+        let tic = TicTacToe::start()
+            .make_move(&B2)
+            .make_move(&B3)
+            .make_move(&B1)
+            .make_move(&C3)
+            .make_move(&A1);
+
+        // yes black wins in one, its hard to find a position where black forces
+        // a win ok
+
+        mcts_vs_alphabeta(tic, -1);
     }
 }
