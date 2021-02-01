@@ -191,18 +191,6 @@ mod tests {
     use super::*;
     use crate::tictactoe::TicTacToe;
 
-    #[test]
-    fn tictactoe() {
-        // let tic = TicTacToe::start();
-        // let mut gt = GameTree::new(tic.clone());
-
-        // for i in 0..10000 {
-        //     gt.step();
-        //     // eprintln!("{} / {}", gt.arena[0].score, gt.arena[0].visits);
-        // }
-        // panic!("{:#?}", gt.arena[0]);
-    }
-
     // TODO: Play as both sides
     fn mcts_vs_alphabeta<T: BoardGame>(start: T, want: i16) {
         use crate::{alphabeta_mv, Player};
